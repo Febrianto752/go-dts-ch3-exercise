@@ -1,45 +1,54 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
 )
 
 func main() {
-	data := map[string]interface{}{
-		"title":  "bandung",
-		"body":   "bandung adalah ibu kota jawa barat",
-		"userId": 1,
-	}
+	http.HandleFunc("/student", ActionStudent)
 
-	requestJson, err := json.Marshal(data)
+	server := new(http.Server)
+	server.Addr = ":9000"
 
-	client := &http.Client{}
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	req, err := http.NewRequest("POST", "https://jsonplaceholder.typicode.com/posts", bytes.NewBuffer(requestJson))
-	req.Header.Set("Content-type", "application/json")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	res, err := client.Do(req)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	fmt.Println("response body :", string(body))
+	fmt.Println("Server started at localhost:9000")
+	server.ListenAndServe()
 }
+
+func ActionStudent(w http.ResponseWriter, r *http.Request) {
+	if !Auth(w, r) {
+		return
+	}
+
+	if !AllowOnlyGET(w, r) {
+		return
+	}
+
+	if id := r.URL.Query().Get("id"); id != "" {
+		OutputJSON(w, SelectStudent(id))
+		return
+	}
+
+	OutputJSON(w, GetStudents())
+
+}
+
+func OutputJSON(w http.ResponseWriter, o interface{}) {
+	res, err := json.Marshal(o)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(res)
+}
+
+// test curl
+// curl -X GET --user febri:febri123 http://localhost:9000/student
+// curl -X GET --user febri:febri123 http://localhost:9000/student?id=s001
+
+// jika d postman
+// 1. masukan attribute Authorization = Basic c29tZXVzZXJuYW1lOnNvbWVwYXNzd29yZA== di menu headers
+// 2. masuk menu authorization kemudian pilih basic auth -> masukan username dan password
