@@ -2,6 +2,7 @@ package routers
 
 import (
 	"latihan/controllers"
+	"latihan/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,14 @@ func StartApp() *gin.Engine {
 		userRouter.POST("/register", controllers.UserRegister)
 
 		userRouter.POST("/login", controllers.UserLogin)
+	}
+
+	productRouter := router.Group("/products")
+	{
+		productRouter.Use(middlewares.Authentication)
+		productRouter.POST("/", controllers.CreateProduct)
+
+		productRouter.PUT("/:productId", middlewares.ProductAuthorization(), controllers.UpdateProduct)
 	}
 
 	return router
